@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.file.mapper.FileMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO gn_file (original_name, stored_name, url, size_bytes, content_type, uploader_kind, uploader_id)
+        VALUES (#{originalName}, #{storedName}, #{url}, #{sizeBytes}, #{contentType}, #{uploaderKind}, #{uploaderId})
+    </insert>
+
+    <select id="listRecent" resultType="com.greennote.system.file.controller.vo.StoredFile">
+        SELECT id,
+               original_name AS name,
+               url,
+               size_bytes AS size,
+               content_type AS contentType
+        FROM gn_file
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

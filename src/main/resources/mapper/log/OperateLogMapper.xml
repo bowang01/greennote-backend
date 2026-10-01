@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.log.mapper.OperateLogMapper">
+
+    <insert id="insert">
+        INSERT INTO gn_operate_log (operator_id, operator_name, action, detail)
+        VALUES (#{operatorId,jdbcType=BIGINT}, #{operatorName}, #{action}, #{detail})
+    </insert>
+
+    <select id="listRecent" resultType="com.greennote.system.log.OperateLogRecord">
+        SELECT id, operator_name, action, detail, created_at
+        FROM gn_operate_log
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

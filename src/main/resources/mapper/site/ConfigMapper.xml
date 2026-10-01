@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.site.mapper.ConfigMapper">
+
+    <select id="findValue" resultType="string">
+        SELECT config_value
+        FROM gn_config
+        WHERE config_key = #{configKey}
+    </select>
+
+    <update id="updateValue">
+        UPDATE gn_config
+        SET config_value = #{configValue},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE config_key = #{configKey}
+    </update>
+
+    <insert id="insert">
+        INSERT INTO gn_config (config_key, config_value)
+        VALUES (#{configKey}, #{configValue})
+    </insert>
+
+</mapper>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.catalog.mapper.DictionaryMapper">
+
+    <resultMap id="dictRow" type="com.greennote.system.catalog.controller.vo.DictRow">
+        <constructor>
+            <arg column="dict_type" javaType="java.lang.String"/>
+            <arg column="type_name" javaType="java.lang.String"/>
+            <arg column="label" javaType="java.lang.String"/>
+            <arg column="dict_value" javaType="java.lang.String"/>
+            <arg column="sort_no" javaType="java.lang.Integer"/>
+            <arg column="status" javaType="java.lang.Integer"/>
+        </constructor>
+    </resultMap>
+
+    <select id="listAll" resultMap="dictRow">
+        SELECT d.dict_type, t.name AS type_name, d.label, d.dict_value, d.sort_no, d.status
+        FROM gn_dict_data d
+        JOIN gn_dict_type t ON t.dict_type = d.dict_type
+        ORDER BY d.dict_type, d.sort_no, d.id
+    </select>
+
+</mapper>

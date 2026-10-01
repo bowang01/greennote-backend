@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.auth.mapper.MenuMapper">
+
+    <select id="findByAdminUserId" resultType="com.greennote.auth.MenuRow">
+        SELECT m.id, m.name, m.path
+        FROM gn_menu m
+        JOIN gn_role_menu rm ON rm.menu_id = m.id
+        JOIN gn_admin_user_role ur ON ur.role_id = rm.role_id
+        WHERE ur.admin_user_id = #{adminUserId}
+          AND m.status = 0
+        ORDER BY m.sort_no, m.id
+    </select>
+
+</mapper>

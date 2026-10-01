@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.member.mapper.MemberMapper">
+
+    <sql id="keywordFilter">
+        username LIKE CONCAT('%', #{keyword}, '%')
+        OR nickname LIKE CONCAT('%', #{keyword}, '%')
+    </sql>
+
+    <select id="countByUsername" resultType="long">
+        SELECT COUNT(*)
+        FROM gn_user
+        WHERE username = #{username}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO gn_user (username, password, nickname, bio, status)
+        VALUES (#{username}, #{password}, #{nickname}, '', 0)
+    </insert>
+
+    <select id="findByUsername" resultType="com.greennote.system.member.MemberCredential">
+        SELECT id, username, password, status
+        FROM gn_user
+        WHERE username = #{username}
+    </select>
+
+    <select id="findById" resultType="com.greennote.system.member.MemberProfileRow">
+        SELECT id, username, nickname, avatar, bio, status
+        FROM gn_user
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateProfile">
+        UPDATE gn_user
+        SET nickname = #{nickname},
+            bio = #{bio},
+            avatar = #{avatar},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByKeyword" resultType="long">
+        SELECT COUNT(*)
+        FROM gn_user
+        WHERE <include refid="keywordFilter"/>
+    </select>
+
+    <select id="pageByKeyword" resultType="com.greennote.system.member.controller.vo.MemberRow">
+        SELECT id, username, nickname, avatar, status
+        FROM gn_user
+        WHERE <include refid="keywordFilter"/>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE gn_user
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

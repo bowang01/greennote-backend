@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.auth.mapper.AdminUserMapper">
+
+    <select id="findByUsername" resultType="com.greennote.auth.AdminAccount">
+        SELECT id, username, password, nickname, status
+        FROM gn_admin_user
+        WHERE username = #{username}
+    </select>
+
+    <select id="findNicknameById" resultType="string">
+        SELECT nickname
+        FROM gn_admin_user
+        WHERE id = #{id}
+    </select>
+
+</mapper>
