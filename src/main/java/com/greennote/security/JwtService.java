@@ -35,7 +35,7 @@ public class JwtService {
         this.key = Keys.hmacShaKeyFor(secret);
     }
 
-    public String createToken(Long userId, String username, String kind) {
+    public String createToken(String userId, String username, String kind) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(properties.getExpireHours(), ChronoUnit.HOURS);
         return Jwts.builder()
@@ -59,12 +59,12 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            Number userId = claims.get("uid", Number.class);
+            String userId = claims.get("uid", String.class);
             String kind = claims.get("kind", String.class);
-            if (userId == null || claims.getSubject() == null || kind == null) {
+            if (userId == null || userId.isBlank() || claims.getSubject() == null || kind == null) {
                 return Optional.empty();
             }
-            return Optional.of(new AuthPrincipal(userId.longValue(), claims.getSubject(), kind));
+            return Optional.of(new AuthPrincipal(userId, claims.getSubject(), kind));
         } catch (JwtException | IllegalArgumentException ex) {
             return Optional.empty();
         }

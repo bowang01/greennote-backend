@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.note.mapper.NoteMapper">
+
+    <sql id="noteColumns">
+        n.id,
+        n.user_id,
+        u.nickname AS author_name,
+        u.avatar AS author_avatar,
+        n.channel_id,
+        c.name AS channel_name,
+        n.type,
+        n.title,
+        n.content,
+        n.cover_url,
+        n.media_json,
+        n.video_url,
+        n.place_name,
+        n.city_name,
+        n.longitude,
+        n.latitude,
+        n.status,
+        n.reject_reason,
+        n.like_count,
+        n.collect_count,
+        n.comment_count,
+        n.published_at,
+        n.created_at,
+        n.updated_at,
+        n.deleted
+    </sql>
+
+    <sql id="noteFrom">
+        FROM gn_note n
+        JOIN gn_user u ON u.id = n.user_id
+        LEFT JOIN gn_channel c ON c.id = n.channel_id
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO gn_note (
+            id, user_id, channel_id, type, title, content, cover_url, media_json, video_url,
+            place_name, city_name, longitude, latitude, status, reject_reason, deleted
+        ) VALUES (
+            #{id}, #{userId}, #{channelId}, #{type}, #{title}, #{content}, #{coverUrl}, #{mediaJson}, #{videoUrl},
+            #{placeName}, #{cityName}, #{longitude}, #{latitude}, #{status}, #{rejectReason}, 0
+        )
+    </insert>
+
+    <update id="updateContent">
+        UPDATE gn_note
+        SET channel_id = #{channelId},
+            type = #{type},
+            title = #{title},
+            content = #{content},
+            cover_url = #{coverUrl},
+            media_json = #{mediaJson},
+            video_url = #{videoUrl},
+            place_name = #{placeName},
+            city_name = #{cityName},
+            longitude = #{longitude},
+            latitude = #{latitude},
+            status = #{status},
+            reject_reason = #{rejectReason},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND user_id = #{userId}
+          AND deleted = 0
+    </update>
+
+    <select id="findById" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        WHERE n.id = #{id}
+          AND n.deleted = 0
+    </select>
+
+    <sql id="publishedWhere">
+        n.deleted = 0
+        AND n.status = 2
+        <if test="channelId != null">
+            AND n.channel_id = #{channelId}
+        </if>
+    </sql>
+
+    <select id="countPublished" resultType="long">
+        SELECT COUNT(*)
+        <include refid="noteFrom"/>
+        WHERE <include refid="publishedWhere"/>
+    </select>
+
+    <select id="pagePublished" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        WHERE <include refid="publishedWhere"/>
+        ORDER BY n.published_at DESC, n.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByAuthor" resultType="long">
+        SELECT COUNT(*)
+        FROM gn_note
+        WHERE user_id = #{userId}
+          AND deleted = 0
+    </select>
+
+    <select id="pageByAuthor" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        WHERE n.user_id = #{userId}
+          AND n.deleted = 0
+        ORDER BY n.created_at DESC, n.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM gn_note n
+        WHERE n.deleted = 0
+        <if test="status != null">
+            AND n.status = #{status}
+        </if>
+        <if test="channelId != null">
+            AND n.channel_id = #{channelId}
+        </if>
+    </select>
+
+    <select id="pageAdmin" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        WHERE n.deleted = 0
+        <if test="status != null">
+            AND n.status = #{status}
+        </if>
+        <if test="channelId != null">
+            AND n.channel_id = #{channelId}
+        </if>
+        ORDER BY n.created_at DESC, n.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="pageLiked" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        JOIN gn_note_like l ON l.note_id = n.id AND l.user_id = #{userId}
+        WHERE n.deleted = 0
+          AND n.status = 2
+        ORDER BY l.created_at DESC, l.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="pageCollected" resultType="com.greennote.system.note.NoteRecord">
+        SELECT <include refid="noteColumns"/>
+        <include refid="noteFrom"/>
+        JOIN gn_note_collect c2 ON c2.note_id = n.id AND c2.user_id = #{userId}
+        WHERE n.deleted = 0
+          AND n.status = 2
+        ORDER BY c2.created_at DESC, c2.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="approve">
+        UPDATE gn_note
+        SET status = 2,
+            reject_reason = NULL,
+            published_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND deleted = 0
+    </update>
+
+    <update id="reject">
+        UPDATE gn_note
+        SET status = 1,
+            reject_reason = #{reason},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND deleted = 0
+    </update>
+
+    <update id="offline">
+        UPDATE gn_note
+        SET status = 3,
+            reject_reason = #{reason},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND deleted = 0
+    </update>
+
+    <update id="addLikeCount">
+        UPDATE gn_note
+        SET like_count = like_count + #{delta}
+        WHERE id = #{id}
+          AND deleted = 0
+          AND like_count + #{delta} &gt;= 0
+    </update>
+
+    <update id="addCollectCount">
+        UPDATE gn_note
+        SET collect_count = collect_count + #{delta}
+        WHERE id = #{id}
+          AND deleted = 0
+          AND collect_count + #{delta} &gt;= 0
+    </update>
+
+    <update id="addCommentCount">
+        UPDATE gn_note
+        SET comment_count = comment_count + #{delta}
+        WHERE id = #{id}
+          AND deleted = 0
+          AND comment_count + #{delta} &gt;= 0
+    </update>
+
+    <select id="listTopics" resultType="com.greennote.system.note.controller.vo.TopicBrief">
+        SELECT t.id, t.name
+        FROM gn_note_topic nt
+        JOIN gn_topic t ON t.id = nt.topic_id
+        WHERE nt.note_id = #{noteId}
+        ORDER BY t.sort_no, t.id
+    </select>
+
+    <delete id="deleteTopics">
+        DELETE FROM gn_note_topic
+        WHERE note_id = #{noteId}
+    </delete>
+
+    <insert id="insertTopic">
+        INSERT INTO gn_note_topic (id, note_id, topic_id)
+        VALUES (#{id}, #{noteId}, #{topicId})
+    </insert>
+
+</mapper>

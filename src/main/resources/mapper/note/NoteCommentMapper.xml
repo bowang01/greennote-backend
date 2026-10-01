@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.note.mapper.NoteCommentMapper">
+
+    <insert id="insert">
+        INSERT INTO gn_note_comment (id, note_id, user_id, parent_id, reply_to_user_id, content, deleted)
+        VALUES (#{id}, #{noteId}, #{userId}, #{parentId}, #{replyToUserId}, #{content}, 0)
+    </insert>
+
+    <select id="listByNote" resultType="com.greennote.system.note.CommentRecord">
+        SELECT c.id,
+               c.note_id,
+               c.user_id,
+               u.nickname AS author_name,
+               c.parent_id,
+               c.reply_to_user_id,
+               ru.nickname AS reply_to_name,
+               c.content,
+               c.like_count,
+               c.created_at,
+               c.updated_at,
+               c.deleted
+        FROM gn_note_comment c
+        JOIN gn_user u ON u.id = c.user_id
+        LEFT JOIN gn_user ru ON ru.id = c.reply_to_user_id
+        WHERE c.note_id = #{noteId}
+          AND c.deleted = 0
+        ORDER BY c.created_at, c.id
+    </select>
+
+</mapper>

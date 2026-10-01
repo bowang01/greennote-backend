@@ -13,15 +13,16 @@ public interface MemberMapper {
 
     long countByUsername(String username);
 
-    int insert(@Param("username") String username,
+    int insert(@Param("id") String id,
+               @Param("username") String username,
                @Param("password") String password,
                @Param("nickname") String nickname);
 
     MemberCredential findByUsername(String username);
 
-    MemberProfileRow findById(long id);
+    MemberProfileRow findById(String id);
 
-    int updateProfile(@Param("id") long id,
+    int updateProfile(@Param("id") String id,
                       @Param("nickname") String nickname,
                       @Param("bio") String bio,
                       @Param("avatar") String avatar);
@@ -32,5 +33,5 @@ public interface MemberMapper {
                                   @Param("limit") int limit,
                                   @Param("offset") int offset);
 
-    int updateStatus(@Param("id") long id, @Param("status") int status);
+    int updateStatus(@Param("id") String id, @Param("status") int status);
 }

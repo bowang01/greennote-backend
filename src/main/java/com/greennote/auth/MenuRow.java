@@ -1,4 +1,4 @@
 package com.greennote.auth;
 
-public record MenuRow(Long id, String name, String path) {
+public record MenuRow(String id, String name, String path) {
 }

@@ -9,7 +9,8 @@ import java.util.List;
 @Mapper
 public interface OperateLogMapper {
 
-    int insert(@Param("operatorId") Long operatorId,
+    int insert(@Param("id") String id,
+               @Param("operatorId") String operatorId,
                @Param("operatorName") String operatorName,
                @Param("action") String action,
                @Param("detail") String detail);

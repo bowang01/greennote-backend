@@ -1,5 +1,6 @@
 package com.greennote.system.file.service;
 
+import com.greennote.common.Ids;
 import com.greennote.common.exception.BusinessException;
 import com.greennote.security.AuthPrincipal;
 import com.greennote.system.file.FileInsert;
@@ -61,6 +62,7 @@ public class FileServiceImpl implements FileService {
         String url = "/uploads/" + storedName;
         String originalName = file.getOriginalFilename() == null ? storedName : file.getOriginalFilename();
         FileInsert row = new FileInsert();
+        row.setId(Ids.newId());
         row.setOriginalName(originalName);
         row.setStoredName(storedName);
         row.setUrl(url);

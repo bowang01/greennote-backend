@@ -1,5 +1,6 @@
 package com.greennote.system.log.service;
 
+import com.greennote.common.Ids;
 import com.greennote.system.log.mapper.OperateLogMapper;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class OperateLogServiceImpl implements OperateLogService {
     }
 
     @Override
-    public void record(Long operatorId, String operatorName, String action, String detail) {
-        operateLogMapper.insert(operatorId, operatorName, action, detail == null ? "" : detail);
+    public void record(String operatorId, String operatorName, String action, String detail) {
+        operateLogMapper.insert(Ids.newId(), operatorId, operatorName, action, detail == null ? "" : detail);
     }
 }

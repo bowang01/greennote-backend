@@ -59,7 +59,7 @@ public class MemberController {
     }
 
     @PatchMapping("/api/admin/members/{id}/status")
-    public ApiResponse<Void> changeStatus(@PathVariable long id, @Valid @RequestBody StatusRequest request) {
+    public ApiResponse<Void> changeStatus(@PathVariable String id, @Valid @RequestBody StatusRequest request) {
         memberService.changeStatus(id, request.status(), SecurityUtils.currentUser());
         return ApiResponse.ok(null);
     }

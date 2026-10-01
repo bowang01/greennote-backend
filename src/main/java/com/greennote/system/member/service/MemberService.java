@@ -14,11 +14,11 @@ public interface MemberService {
 
     LoginResponse login(String username, String password);
 
-    ProfileResponse profile(long userId);
+    ProfileResponse profile(String userId);
 
-    ProfileResponse update(long userId, ProfileUpdateRequest request);
+    ProfileResponse update(String userId, ProfileUpdateRequest request);
 
     PageResult<MemberRow> page(String keyword, int page, int size);
 
-    void changeStatus(long id, int status, AuthPrincipal operator);
+    void changeStatus(String id, int status, AuthPrincipal operator);
 }

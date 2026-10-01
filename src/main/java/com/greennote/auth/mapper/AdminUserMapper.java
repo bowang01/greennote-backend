@@ -8,5 +8,5 @@ public interface AdminUserMapper {
 
     AdminAccount findByUsername(String username);
 
-    String findNicknameById(Long id);
+    String findNicknameById(String id);
 }

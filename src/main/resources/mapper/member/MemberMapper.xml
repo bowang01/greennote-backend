@@ -15,8 +15,8 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO gn_user (username, password, nickname, bio, status)
-        VALUES (#{username}, #{password}, #{nickname}, '', 0)
+        INSERT INTO gn_user (id, username, password, nickname, bio, status)
+        VALUES (#{id}, #{username}, #{password}, #{nickname}, '', 0)
     </insert>
 
     <select id="findByUsername" resultType="com.greennote.system.member.MemberCredential">
@@ -50,7 +50,7 @@
         SELECT id, username, nickname, avatar, status
         FROM gn_user
         WHERE <include refid="keywordFilter"/>
-        ORDER BY id DESC
+        ORDER BY created_at DESC, id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 

@@ -1,5 +1,6 @@
 package com.greennote.system.member.service;
 
+import com.greennote.common.Ids;
 import com.greennote.auth.controller.vo.LoginResponse;
 import com.greennote.common.api.PageResult;
 import com.greennote.common.exception.BusinessException;
@@ -41,7 +42,7 @@ public class MemberServiceImpl implements MemberService {
         if (memberMapper.countByUsername(request.username()) > 0) {
             throw new BusinessException(400, "Username already exists");
         }
-        memberMapper.insert(request.username(), passwordEncoder.encode(request.password()), request.nickname().trim());
+        memberMapper.insert(Ids.newId(), request.username(), passwordEncoder.encode(request.password()), request.nickname().trim());
         operateLogService.record(null, request.username(), "member.register", "Member registered");
     }
 
@@ -64,12 +65,12 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public ProfileResponse profile(long userId) {
+    public ProfileResponse profile(String userId) {
         return toProfile(requireProfile(userId));
     }
 
     @Override
-    public ProfileResponse update(long userId, ProfileUpdateRequest request) {
+    public ProfileResponse update(String userId, ProfileUpdateRequest request) {
         String bio = request.bio() == null ? "" : request.bio();
         String avatar = request.avatar() == null ? "" : request.avatar();
         int updated = memberMapper.updateProfile(userId, request.nickname().trim(), bio, avatar);
@@ -90,7 +91,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public void changeStatus(long id, int status, AuthPrincipal operator) {
+    public void changeStatus(String id, int status, AuthPrincipal operator) {
         int updated = memberMapper.updateStatus(id, status);
         if (updated == 0) {
             throw new BusinessException(404, "Member not found");
@@ -98,7 +99,7 @@ public class MemberServiceImpl implements MemberService {
         operateLogService.record(operator.userId(), operator.username(), "member.status", "Member " + id + " status " + status);
     }
 
-    private MemberProfileRow requireProfile(long userId) {
+    private MemberProfileRow requireProfile(String userId) {
         MemberProfileRow row = memberMapper.findById(userId);
         if (row == null) {
             throw new BusinessException(404, "Member not found");

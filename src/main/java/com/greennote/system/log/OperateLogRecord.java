@@ -4,17 +4,17 @@ import java.sql.Timestamp;
 
 public class OperateLogRecord {
 
-    private Long id;
+    private String id;
     private String operatorName;
     private String action;
     private String detail;
     private Timestamp createdAt;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

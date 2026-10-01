@@ -2,20 +2,20 @@ package com.greennote.system.file;
 
 public class FileInsert {
 
-    private Long id;
+    private String id;
     private String originalName;
     private String storedName;
     private String url;
     private Long sizeBytes;
     private String contentType;
     private String uploaderKind;
-    private Long uploaderId;
+    private String uploaderId;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -67,11 +67,11 @@ public class FileInsert {
         this.uploaderKind = uploaderKind;
     }
 
-    public Long getUploaderId() {
+    public String getUploaderId() {
         return uploaderId;
     }
 
-    public void setUploaderId(Long uploaderId) {
+    public void setUploaderId(String uploaderId) {
         this.uploaderId = uploaderId;
     }
 }

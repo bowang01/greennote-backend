@@ -10,5 +10,5 @@ public interface ConfigMapper {
 
     int updateValue(@Param("configKey") String configKey, @Param("configValue") String configValue);
 
-    int insert(@Param("configKey") String configKey, @Param("configValue") String configValue);
+    int insert(@Param("id") String id, @Param("configKey") String configKey, @Param("configValue") String configValue);
 }

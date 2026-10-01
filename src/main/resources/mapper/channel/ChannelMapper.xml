@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.channel.mapper.ChannelMapper">
+
+    <sql id="columns">
+        id, name, sort_no, status, created_at, updated_at
+    </sql>
+
+    <select id="list" resultType="com.greennote.system.channel.controller.vo.ChannelResponse">
+        SELECT <include refid="columns"/>
+        FROM gn_channel
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY sort_no, id
+    </select>
+
+    <select id="findById" resultType="com.greennote.system.channel.controller.vo.ChannelResponse">
+        SELECT <include refid="columns"/>
+        FROM gn_channel
+        WHERE id = #{id}
+    </select>
+
+    <select id="countByName" resultType="int">
+        SELECT COUNT(*)
+        FROM gn_channel
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id &lt;&gt; #{excludeId}
+        </if>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO gn_channel (id, name, sort_no, status)
+        VALUES (#{id}, #{name}, #{sortNo}, 0)
+    </insert>
+
+    <update id="update">
+        UPDATE gn_channel
+        SET name = #{name},
+            sort_no = #{sortNo},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE gn_channel
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -4,14 +4,14 @@
 <mapper namespace="com.greennote.system.log.mapper.OperateLogMapper">
 
     <insert id="insert">
-        INSERT INTO gn_operate_log (operator_id, operator_name, action, detail)
-        VALUES (#{operatorId,jdbcType=BIGINT}, #{operatorName}, #{action}, #{detail})
+        INSERT INTO gn_operate_log (id, operator_id, operator_name, action, detail)
+        VALUES (#{id}, #{operatorId}, #{operatorName}, #{action}, #{detail})
     </insert>
 
     <select id="listRecent" resultType="com.greennote.system.log.OperateLogRecord">
         SELECT id, operator_name, action, detail, created_at
         FROM gn_operate_log
-        ORDER BY id DESC
+        ORDER BY created_at DESC, id DESC
         LIMIT #{limit}
     </select>
 

@@ -17,8 +17,8 @@
     </update>
 
     <insert id="insert">
-        INSERT INTO gn_config (config_key, config_value)
-        VALUES (#{configKey}, #{configValue})
+        INSERT INTO gn_config (id, config_key, config_value)
+        VALUES (#{id}, #{configKey}, #{configValue})
     </insert>
 
 </mapper>

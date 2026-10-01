@@ -1,5 +1,6 @@
 package com.greennote.system.site.service;
 
+import com.greennote.common.Ids;
 import com.greennote.common.exception.BusinessException;
 import com.greennote.security.AuthPrincipal;
 import com.greennote.system.log.service.OperateLogService;
@@ -46,7 +47,7 @@ public class SiteServiceImpl implements SiteService {
     private void save(String key, String value) {
         int updated = configMapper.updateValue(key, value);
         if (updated == 0) {
-            configMapper.insert(key, value);
+            configMapper.insert(Ids.newId(), key, value);
         }
     }
 }

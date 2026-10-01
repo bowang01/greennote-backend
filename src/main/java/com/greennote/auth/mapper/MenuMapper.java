@@ -8,5 +8,5 @@ import java.util.List;
 @Mapper
 public interface MenuMapper {
 
-    List<MenuRow> findByAdminUserId(Long adminUserId);
+    List<MenuRow> findByAdminUserId(String adminUserId);
 }

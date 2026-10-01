@@ -1,4 +1,4 @@
 package com.greennote.system.member;
 
-public record MemberProfileRow(Long id, String username, String nickname, String avatar, String bio, int status) {
+public record MemberProfileRow(String id, String username, String nickname, String avatar, String bio, int status) {
 }

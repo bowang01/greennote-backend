@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greennote.system.topic.mapper.TopicMapper">
+
+    <sql id="columns">
+        id, name, intro, sort_no, status, created_at, updated_at
+    </sql>
+
+    <select id="list" resultType="com.greennote.system.topic.controller.vo.TopicResponse">
+        SELECT <include refid="columns"/>
+        FROM gn_topic
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY sort_no, id
+    </select>
+
+    <select id="findById" resultType="com.greennote.system.topic.controller.vo.TopicResponse">
+        SELECT <include refid="columns"/>
+        FROM gn_topic
+        WHERE id = #{id}
+    </select>
+
+    <select id="countByName" resultType="int">
+        SELECT COUNT(*)
+        FROM gn_topic
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id &lt;&gt; #{excludeId}
+        </if>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO gn_topic (id, name, intro, sort_no, status)
+        VALUES (#{id}, #{name}, #{intro}, #{sortNo}, 0)
+    </insert>
+
+    <update id="update">
+        UPDATE gn_topic
+        SET name = #{name},
+            intro = #{intro},
+            sort_no = #{sortNo},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE gn_topic
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

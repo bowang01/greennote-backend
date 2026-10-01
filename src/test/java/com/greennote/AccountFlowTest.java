@@ -83,10 +83,10 @@ class AccountFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1));
 
-        long memberId = objectMapper.readTree(
+        String memberId = objectMapper.readTree(
                 mockMvc.perform(get("/api/member/profile").header("Authorization", "Bearer " + token))
                         .andReturn().getResponse().getContentAsString()
-        ).get("data").get("userId").asLong();
+        ).get("data").get("userId").asText();
 
         mockMvc.perform(patch("/api/admin/members/" + memberId + "/status")
                         .header("Authorization", "Bearer " + admin)
