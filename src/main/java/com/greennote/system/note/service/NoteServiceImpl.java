@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greennote.common.api.PageResult;
 import com.greennote.common.exception.BusinessException;
+import com.greennote.system.channel.controller.vo.ChannelResponse;
 import com.greennote.system.channel.mapper.ChannelMapper;
 import com.greennote.system.note.CommentInsert;
 import com.greennote.system.note.NoteInsert;
@@ -18,6 +19,7 @@ import com.greennote.system.note.mapper.NoteCollectMapper;
 import com.greennote.system.note.mapper.NoteCommentMapper;
 import com.greennote.system.note.mapper.NoteLikeMapper;
 import com.greennote.system.note.mapper.NoteMapper;
+import com.greennote.system.topic.controller.vo.TopicResponse;
 import com.greennote.system.topic.mapper.TopicMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,11 +60,10 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public PageResult<NoteCard> feed(String channelId, int page, int size) {
-        int safePage = Math.max(page, 1);
-        int safeSize = Math.min(Math.max(size, 1), 50);
+        int limit = pageLimit(size);
+        int offset = pageOffset(page, limit);
         String channel = isBlank(channelId) ? null : channelId;
-        int offset = (safePage - 1) * safeSize;
-        List<NoteCard> list = noteMapper.pagePublished(channel, safeSize, offset).stream()
+        List<NoteCard> list = noteMapper.pagePublished(channel, limit, offset).stream()
                 .map(this::toCard)
                 .toList();
         return new PageResult<>(list, noteMapper.countPublished(channel));
@@ -95,81 +96,58 @@ public class NoteServiceImpl implements NoteService {
     @Override
     @Transactional
     public String publish(String userId, NoteSaveRequest request) {
-        int type = request.type() == null ? 1 : request.type();
-        if (type != 1 && type != 2) {
-            throw new BusinessException(400, "Note type is invalid");
-        }
-        if (type == 2 && isBlank(request.videoUrl())) {
-            throw new BusinessException(400, "Video URL is required");
-        }
-        if (request.channelId() != null) {
-            var channel = channelMapper.findById(request.channelId());
-            if (channel == null) {
-                throw new BusinessException(404, "Channel not found");
-            }
-            if (channel.status() != 0) {
-                throw new BusinessException(400, "Channel is disabled");
-            }
-        }
-
-        List<String> topicIds = distinctIds(request.topicIds());
-        for (String topicId : topicIds) {
-            var topic = topicMapper.findById(topicId);
-            if (topic == null) {
-                throw new BusinessException(404, "Topic not found");
-            }
-            if (topic.status() != 0) {
-                throw new BusinessException(400, "Topic is disabled");
-            }
-        }
-
-        List<String> images = cleanImages(request.imageUrls());
-        NoteInsert note = new NoteInsert();
-        note.setId(Ids.newId());
-        note.setUserId(userId);
-        note.setChannelId(request.channelId());
-        note.setType(type);
-        note.setTitle(request.title().trim());
-        note.setContent(trimToEmpty(request.content()));
-        note.setCoverUrl(images.isEmpty() ? null : images.get(0));
-        note.setMediaJson(images.isEmpty() ? null : toJson(images));
-        note.setVideoUrl(trimToNull(request.videoUrl()));
-        note.setPlaceName(trimToNull(request.placeName()));
-        note.setCityName(trimToNull(request.cityName()));
-        note.setLongitude(request.longitude());
-        note.setLatitude(request.latitude());
-        note.setStatus(1);
+        NoteInsert note = buildNote(Ids.newId(), userId, 2, null, request);
+        List<String> topicIds = requireEnabledTopics(request.topicIds());
         noteMapper.insert(note);
-
-        noteMapper.deleteTopics(note.getId());
-        for (String topicId : topicIds) {
-            noteMapper.insertTopic(Ids.newId(), note.getId(), topicId);
-        }
+        replaceTopics(note.getId(), topicIds);
         return note.getId();
     }
 
     @Override
+    @Transactional
     public void update(String userId, String id, NoteSaveRequest request) {
-        // Author only. Allowed while status is 0 or 1. Saving sets status back to 1 and clears reject_reason.
-        pending();
+        NoteRecord noteRecord = noteMapper.findById(id);
+        if (noteRecord == null || !userId.equals(noteRecord.userId())) {
+            throw new BusinessException(404, "Note not found");
+        }
+        if (noteRecord.status() != 0 && noteRecord.status() != 1) {
+            throw new BusinessException(400, "Note cannot be edited");
+        }
+
+        NoteInsert note = buildNote(id, userId, 2, null, request);
+        List<String> topicIds = requireEnabledTopics(request.topicIds());
+        int updatedRowCount = noteMapper.updateContent(note);
+        if (updatedRowCount == 0) {
+            throw new BusinessException(404, "Note not found");
+        }
+        replaceTopics(id, topicIds);
     }
 
     @Override
     public PageResult<NoteCard> mine(String userId, int page, int size) {
-        // All of the author's notes, including draft, pending, published, and offline.
-        return pending();
+        int limit = pageLimit(size);
+        int offset = pageOffset(page, limit);
+        long total = noteMapper.countByAuthor(userId);
+        List<NoteRecord> noteRecords = noteMapper.pageByAuthor(userId, limit, offset);
+        return toCardPage(noteRecords, total);
     }
 
     @Override
     public PageResult<NoteCard> likes(String userId, int page, int size) {
-        // Published notes this member liked. noteMapper.pageLiked is ready.
-        return pending();
+        int limit = pageLimit(size);
+        int offset = pageOffset(page, limit);
+        long total = noteMapper.countLiked(userId);
+        List<NoteRecord> noteRecords = noteMapper.pageLiked(userId, limit, offset);
+        return toCardPage(noteRecords, total);
     }
 
     @Override
     public PageResult<NoteCard> collects(String userId, int page, int size) {
-        // Published notes this member collected. noteMapper.pageCollected is ready.
-        return pending();
+        int limit = pageLimit(size);
+        int offset = pageOffset(page, limit);
+        long total = noteMapper.countCollected(userId);
+        List<NoteRecord> noteRecords = noteMapper.pageCollected(userId, limit, offset);
+        return toCardPage(noteRecords, total);
     }
 
     @Override
@@ -261,6 +239,21 @@ public class NoteServiceImpl implements NoteService {
         return note;
     }
 
+    private int pageLimit(int size) {
+        return Math.min(Math.max(size, 1), 50);
+    }
+
+    private int pageOffset(int page, int limit) {
+        int safePage = Math.max(page, 1);
+        return (safePage - 1) * limit;
+    }
+
+    private PageResult<NoteCard> toCardPage(List<NoteRecord> noteRecords, long total) {
+        List<NoteCard> list = noteRecords.stream().map(this::toCard).toList();
+        PageResult<NoteCard> noteCardPageResult = new PageResult<>(list, total);
+        return noteCardPageResult;
+    }
+
     private NoteCard toCard(NoteRecord note) {
         return new NoteCard(
                 note.id(),
@@ -316,6 +309,70 @@ public class NoteServiceImpl implements NoteService {
             return images == null ? List.of() : images;
         } catch (JsonProcessingException ex) {
             return List.of();
+        }
+    }
+
+    private NoteInsert buildNote(String id, String userId, int status, String rejectReason, NoteSaveRequest request) {
+        int type = request.type() == null ? 1 : request.type();
+        if (type != 1 && type != 2) {
+            throw new BusinessException(400, "Note type is invalid");
+        }
+        if (type == 2 && isBlank(request.videoUrl())) {
+            throw new BusinessException(400, "Video URL is required");
+        }
+        requireEnabledChannel(request.channelId());
+
+        List<String> images = cleanImages(request.imageUrls());
+        NoteInsert note = new NoteInsert();
+        note.setId(id);
+        note.setUserId(userId);
+        note.setChannelId(request.channelId());
+        note.setType(type);
+        note.setTitle(request.title().trim());
+        note.setContent(trimToEmpty(request.content()));
+        note.setCoverUrl(images.isEmpty() ? null : images.get(0));
+        note.setMediaJson(images.isEmpty() ? null : toJson(images));
+        note.setVideoUrl(trimToNull(request.videoUrl()));
+        note.setPlaceName(trimToNull(request.placeName()));
+        note.setCityName(trimToNull(request.cityName()));
+        note.setLongitude(request.longitude());
+        note.setLatitude(request.latitude());
+        note.setStatus(status);
+        note.setRejectReason(rejectReason);
+        return note;
+    }
+
+    private void requireEnabledChannel(String channelId) {
+        if (channelId == null) {
+            return;
+        }
+        ChannelResponse channel = channelMapper.findById(channelId);
+        if (channel == null) {
+            throw new BusinessException(404, "Channel not found");
+        }
+        if (channel.status() != 0) {
+            throw new BusinessException(400, "Channel is disabled");
+        }
+    }
+
+    private List<String> requireEnabledTopics(List<String> topicIds) {
+        List<String> distinctTopicIds = distinctIds(topicIds);
+        for (String topicId : distinctTopicIds) {
+            TopicResponse topic = topicMapper.findById(topicId);
+            if (topic == null) {
+                throw new BusinessException(404, "Topic not found");
+            }
+            if (topic.status() != 0) {
+                throw new BusinessException(400, "Topic is disabled");
+            }
+        }
+        return distinctTopicIds;
+    }
+
+    private void replaceTopics(String noteId, List<String> topicIds) {
+        noteMapper.deleteTopics(noteId);
+        for (String topicId : topicIds) {
+            noteMapper.insertTopic(Ids.newId(), noteId, topicId);
         }
     }
 

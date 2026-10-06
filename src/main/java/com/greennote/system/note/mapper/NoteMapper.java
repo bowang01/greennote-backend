@@ -36,9 +36,13 @@ public interface NoteMapper {
                                @Param("limit") int limit,
                                @Param("offset") int offset);
 
+    long countLiked(String userId);
+
     List<NoteRecord> pageLiked(@Param("userId") String userId,
                                @Param("limit") int limit,
                                @Param("offset") int offset);
+
+    long countCollected(String userId);
 
     List<NoteRecord> pageCollected(@Param("userId") String userId,
                                    @Param("limit") int limit,
