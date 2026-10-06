@@ -58,6 +58,7 @@ public class NoteServiceImpl implements NoteService {
         this.objectMapper = objectMapper;
     }
 
+    /** Published notes only. A blank channel lists every channel. */
     @Override
     public PageResult<NoteCard> feed(String channelId, int page, int size) {
         int limit = pageLimit(size);
@@ -69,11 +70,13 @@ public class NoteServiceImpl implements NoteService {
         return new PageResult<>(list, noteMapper.countPublished(channel));
     }
 
+    /** Published notes are public. The author can also open a note in any other status. */
     @Override
     public NoteDetail detail(String id, String viewerId) {
         return toDetail(requireVisible(id, viewerId), viewerId);
     }
 
+    /** Comments for a note the viewer is allowed to open. */
     @Override
     public List<CommentResponse> comments(String noteId, String viewerId) {
         requireVisible(noteId, viewerId);
@@ -93,6 +96,7 @@ public class NoteServiceImpl implements NoteService {
                 .toList();
     }
 
+    /** Creates a note and publishes it immediately. Returns the new note id. */
     @Override
     @Transactional
     public String publish(String userId, NoteSaveRequest request) {
@@ -103,6 +107,7 @@ public class NoteServiceImpl implements NoteService {
         return note.getId();
     }
 
+    /** Author only, and only while the note is a draft or pending. Saving publishes it again. */
     @Override
     @Transactional
     public void update(String userId, String id, NoteSaveRequest request) {
@@ -123,6 +128,7 @@ public class NoteServiceImpl implements NoteService {
         replaceTopics(id, topicIds);
     }
 
+    /** Every note written by this member, in any status. */
     @Override
     public PageResult<NoteCard> mine(String userId, int page, int size) {
         int limit = pageLimit(size);
@@ -132,6 +138,7 @@ public class NoteServiceImpl implements NoteService {
         return toCardPage(noteRecords, total);
     }
 
+    /** Published notes this member has liked. */
     @Override
     public PageResult<NoteCard> likes(String userId, int page, int size) {
         int limit = pageLimit(size);
@@ -141,6 +148,7 @@ public class NoteServiceImpl implements NoteService {
         return toCardPage(noteRecords, total);
     }
 
+    /** Published notes this member has collected. */
     @Override
     public PageResult<NoteCard> collects(String userId, int page, int size) {
         int limit = pageLimit(size);
@@ -150,6 +158,7 @@ public class NoteServiceImpl implements NoteService {
         return toCardPage(noteRecords, total);
     }
 
+    /** Adds or removes this member's like on a published note, and updates the like count. */
     @Override
     @Transactional
     public void toggleLike(String userId, String noteId) {
@@ -163,6 +172,7 @@ public class NoteServiceImpl implements NoteService {
         noteMapper.addLikeCount(noteId, 1);
     }
 
+    /** Adds or removes this member's collect on a published note, and updates the collect count. */
     @Override
     @Transactional
     public void toggleCollect(String userId, String noteId) {
@@ -176,6 +186,7 @@ public class NoteServiceImpl implements NoteService {
         noteMapper.addCollectCount(noteId, 1);
     }
 
+    /** Adds a comment on a published note. A null parent is a top-level comment. Returns the comment id. */
     @Override
     @Transactional
     public String comment(String userId, String noteId, CommentRequest request) {
@@ -196,28 +207,63 @@ public class NoteServiceImpl implements NoteService {
         return comment.getId();
     }
 
+    /** Admin list of every note. A null status means every status. */
     @Override
     public PageResult<NoteCard> adminPage(Integer status, String channelId, int page, int size) {
-        // noteMapper.pageAdmin / countAdmin. Null status means every status.
-        return pending();
+        int limit = pageLimit(size);
+        int offset = pageOffset(page, limit);
+        String channel = isBlank(channelId) ? null : channelId;
+        long total = noteMapper.countAdmin(status, channel);
+        List<NoteRecord> noteRecords = noteMapper.pageAdmin(status, channel, limit, offset);
+        return toCardPage(noteRecords, total);
     }
 
+    /** Publishes the note: status 2, reject reason cleared, published time set. */
     @Override
     public void approve(String id) {
-        // status becomes 2 and published_at is set. noteMapper.approve is ready.
-        pending();
+        requireExisting(id);
+        int updatedRowCount = noteMapper.approve(id);
+        if (updatedRowCount == 0) {
+            throw new BusinessException(404, "Note not found");
+        }
     }
 
+    /** Sends the note back to pending and stores the reject reason. The author can edit and submit again. */
     @Override
     public void reject(String id, String reason) {
-        // Stay at status 1 and store reject_reason. The author can edit and submit again.
-        pending();
+        requireExisting(id);
+        String rejectReason = requireReason(reason, "Reject reason is required");
+        int updatedRowCount = noteMapper.reject(id, rejectReason);
+        if (updatedRowCount == 0) {
+            throw new BusinessException(404, "Note not found");
+        }
     }
 
+    /** Takes the note offline. The public feed and other members can no longer open it. */
     @Override
     public void offline(String id, String reason) {
-        // status becomes 3. The public feed and other members' detail requests hide it.
-        pending();
+        requireExisting(id);
+        String offlineReason = requireReason(reason, "Offline reason is required");
+        int updatedRowCount = noteMapper.offline(id, offlineReason);
+        if (updatedRowCount == 0) {
+            throw new BusinessException(404, "Note not found");
+        }
+    }
+
+    private NoteRecord requireExisting(String id) {
+        NoteRecord note = noteMapper.findById(id);
+        if (note == null) {
+            throw new BusinessException(404, "Note not found");
+        }
+        return note;
+    }
+
+    private String requireReason(String reason, String message) {
+        String trimmedReason = trimToEmpty(reason);
+        if (trimmedReason.isEmpty()) {
+            throw new BusinessException(400, message);
+        }
+        return trimmedReason;
     }
 
     private NoteRecord requireVisible(String id, String viewerId) {
@@ -428,9 +474,5 @@ public class NoteServiceImpl implements NoteService {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
-    }
-
-    private static <T> T pending() {
-        throw new BusinessException(501, "Not implemented");
     }
 }
