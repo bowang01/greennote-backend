@@ -2,7 +2,6 @@ package com.greennote;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.greennote.system.note.mapper.NoteMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,11 +29,8 @@ class NoteUpdateTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private NoteMapper noteMapper;
-
     @Test
-    void authorCanResubmitADraftOrPendingNote() throws Exception {
+    void authorCanEditANoteInAnyStatus() throws Exception {
         String token = member("editor", "Editor");
         String other = member("othereditor", "Other");
         String channelId = idNamed("/api/channels", "Fashion");
@@ -68,16 +64,6 @@ class NoteUpdateTest {
                 }
                 """.formatted(channelId, otherTopicId);
 
-        if (noteMapper.findById(noteId).status() == 2) {
-            mockMvc.perform(put("/api/member/notes/" + noteId)
-                            .header("Authorization", "Bearer " + token)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.msg").value("Note cannot be edited"));
-            noteMapper.reject(noteId, "Need a clearer title");
-        }
-
         mockMvc.perform(put("/api/member/notes/" + noteId)
                         .header("Authorization", "Bearer " + other)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,7 +80,7 @@ class NoteUpdateTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("Revised title"))
                 .andExpect(jsonPath("$.data.content").value("After"))
-                .andExpect(jsonPath("$.data.status").value(1))
+                .andExpect(jsonPath("$.data.status").value(2))
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.cityName").value("Wellington"))
                 .andExpect(jsonPath("$.data.imageUrls[0]").value("/uploads/new.png"))

@@ -240,6 +240,55 @@
         WHERE note_id = #{noteId}
     </delete>
 
+    <select id="listReceivedLikes" resultType="com.greennote.system.note.InboxRow">
+        SELECT l.id,
+               'like' AS kind,
+               u.nickname AS actor_name,
+               u.avatar AS actor_avatar,
+               n.id AS note_id,
+               n.title AS note_title,
+               NULL AS text,
+               l.created_at
+        FROM gn_note_like l
+        JOIN gn_note n ON n.id = l.note_id AND n.deleted = 0 AND n.user_id = #{userId}
+        JOIN gn_user u ON u.id = l.user_id
+        ORDER BY l.created_at DESC, l.id DESC
+        LIMIT 50
+    </select>
+
+    <select id="listReceivedCollects" resultType="com.greennote.system.note.InboxRow">
+        SELECT c2.id,
+               'collect' AS kind,
+               u.nickname AS actor_name,
+               u.avatar AS actor_avatar,
+               n.id AS note_id,
+               n.title AS note_title,
+               NULL AS text,
+               c2.created_at
+        FROM gn_note_collect c2
+        JOIN gn_note n ON n.id = c2.note_id AND n.deleted = 0 AND n.user_id = #{userId}
+        JOIN gn_user u ON u.id = c2.user_id
+        ORDER BY c2.created_at DESC, c2.id DESC
+        LIMIT 50
+    </select>
+
+    <select id="listReceivedComments" resultType="com.greennote.system.note.InboxRow">
+        SELECT c.id,
+               'comment' AS kind,
+               u.nickname AS actor_name,
+               u.avatar AS actor_avatar,
+               n.id AS note_id,
+               n.title AS note_title,
+               c.content AS text,
+               c.created_at
+        FROM gn_note_comment c
+        JOIN gn_note n ON n.id = c.note_id AND n.deleted = 0 AND n.user_id = #{userId}
+        JOIN gn_user u ON u.id = c.user_id
+        WHERE c.deleted = 0
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT 50
+    </select>
+
     <insert id="insertTopic">
         INSERT INTO gn_note_topic (id, note_id, topic_id)
         VALUES (#{id}, #{noteId}, #{topicId})

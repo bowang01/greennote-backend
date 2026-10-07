@@ -2,6 +2,7 @@ package com.greennote.system.note.service;
 
 import com.greennote.common.api.PageResult;
 import com.greennote.system.note.controller.vo.CommentRequest;
+import com.greennote.system.note.controller.vo.InboxItem;
 import com.greennote.system.note.controller.vo.CommentResponse;
 import com.greennote.system.note.controller.vo.NoteCard;
 import com.greennote.system.note.controller.vo.NoteDetail;
@@ -20,10 +21,10 @@ public interface NoteService {
     /** Comments for a note the viewer is allowed to open. */
     List<CommentResponse> comments(String noteId, String viewerId);
 
-    /** Creates a note and publishes it immediately. Returns the new note id. */
+    /** Creates a note. A draft stays private. Otherwise it is published. Returns the new note id. */
     String publish(String userId, NoteSaveRequest request);
 
-    /** Author only, and only while the note is a draft or pending. Saving publishes it again. */
+    /** Author only, in any status. A draft stays a draft. Otherwise it is published. */
     void update(String userId, String id, NoteSaveRequest request);
 
     /** Every note written by this member, in any status. */
@@ -55,4 +56,7 @@ public interface NoteService {
 
     /** Takes the note offline. The public feed and other members can no longer open it. */
     void offline(String id, String reason);
+
+    /** Activity on this member's notes. kind is like, comment, or message. */
+    List<InboxItem> inbox(String userId, String kind);
 }

@@ -8,9 +8,11 @@ import com.greennote.common.exception.BusinessException;
 import com.greennote.system.channel.controller.vo.ChannelResponse;
 import com.greennote.system.channel.mapper.ChannelMapper;
 import com.greennote.system.note.CommentInsert;
+import com.greennote.system.note.InboxRow;
 import com.greennote.system.note.NoteInsert;
 import com.greennote.system.note.NoteRecord;
 import com.greennote.system.note.controller.vo.CommentRequest;
+import com.greennote.system.note.controller.vo.InboxItem;
 import com.greennote.system.note.controller.vo.CommentResponse;
 import com.greennote.system.note.controller.vo.NoteCard;
 import com.greennote.system.note.controller.vo.NoteDetail;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -96,18 +99,18 @@ public class NoteServiceImpl implements NoteService {
                 .toList();
     }
 
-    /** Creates a note and publishes it immediately. Returns the new note id. */
+    /** Creates a note. A draft stays private. Otherwise it is published. Returns the new note id. */
     @Override
     @Transactional
     public String publish(String userId, NoteSaveRequest request) {
-        NoteInsert note = buildNote(Ids.newId(), userId, 2, null, request);
+        NoteInsert note = buildNote(Ids.newId(), userId, saveStatus(request), null, request);
         List<String> topicIds = requireEnabledTopics(request.topicIds());
         noteMapper.insert(note);
         replaceTopics(note.getId(), topicIds);
         return note.getId();
     }
 
-    /** Author only, and only while the note is a draft or pending. Saving publishes it again. */
+    /** Author only, in any status. A draft stays a draft. Otherwise it is published. */
     @Override
     @Transactional
     public void update(String userId, String id, NoteSaveRequest request) {
@@ -115,11 +118,8 @@ public class NoteServiceImpl implements NoteService {
         if (noteRecord == null || !userId.equals(noteRecord.userId())) {
             throw new BusinessException(404, "Note not found");
         }
-        if (noteRecord.status() != 0 && noteRecord.status() != 1) {
-            throw new BusinessException(400, "Note cannot be edited");
-        }
 
-        NoteInsert note = buildNote(id, userId, 2, null, request);
+        NoteInsert note = buildNote(id, userId, saveStatus(request), null, request);
         List<String> topicIds = requireEnabledTopics(request.topicIds());
         int updatedRowCount = noteMapper.updateContent(note);
         if (updatedRowCount == 0) {
@@ -237,6 +237,25 @@ public class NoteServiceImpl implements NoteService {
         if (updatedRowCount == 0) {
             throw new BusinessException(404, "Note not found");
         }
+    }
+
+    /** Activity on this member's notes. kind is like, comment, or message. */
+    @Override
+    public List<InboxItem> inbox(String userId, String kind) {
+        if ("message".equals(kind)) {
+            return List.of();
+        }
+        List<InboxRow> rows = new ArrayList<>();
+        if ("like".equals(kind)) {
+            rows.addAll(noteMapper.listReceivedLikes(userId));
+            rows.addAll(noteMapper.listReceivedCollects(userId));
+        } else if ("comment".equals(kind)) {
+            rows.addAll(noteMapper.listReceivedComments(userId));
+        } else {
+            throw new BusinessException(400, "Inbox kind is invalid");
+        }
+        rows.sort(Comparator.comparing(InboxRow::createdAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        return rows.stream().map(this::toInboxItem).toList();
     }
 
     /** Takes the note offline. The public feed and other members can no longer open it. */
@@ -358,12 +377,33 @@ public class NoteServiceImpl implements NoteService {
         }
     }
 
+    private int saveStatus(NoteSaveRequest request) {
+        if (Boolean.TRUE.equals(request.draft())) {
+            return 0;
+        }
+        return 2;
+    }
+
+    private InboxItem toInboxItem(InboxRow row) {
+        String createdAt = row.createdAt() == null ? null : row.createdAt().format(COMMENT_TIME);
+        return new InboxItem(
+                row.id(),
+                row.kind(),
+                row.actorName(),
+                row.actorAvatar(),
+                row.noteId(),
+                row.noteTitle(),
+                row.text(),
+                createdAt
+        );
+    }
+
     private NoteInsert buildNote(String id, String userId, int status, String rejectReason, NoteSaveRequest request) {
         int type = request.type() == null ? 1 : request.type();
         if (type != 1 && type != 2) {
             throw new BusinessException(400, "Note type is invalid");
         }
-        if (type == 2 && isBlank(request.videoUrl())) {
+        if (type == 2 && isBlank(request.videoUrl()) && !Boolean.TRUE.equals(request.draft())) {
             throw new BusinessException(400, "Video URL is required");
         }
         requireEnabledChannel(request.channelId());

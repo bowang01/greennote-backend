@@ -4,10 +4,13 @@ import com.greennote.common.api.ApiResponse;
 import com.greennote.common.api.PageResult;
 import com.greennote.security.SecurityUtils;
 import com.greennote.system.note.controller.vo.CommentRequest;
+import com.greennote.system.note.controller.vo.InboxItem;
 import com.greennote.system.note.controller.vo.NoteCard;
 import com.greennote.system.note.controller.vo.NoteSaveRequest;
 import com.greennote.system.note.service.NoteService;
 import jakarta.validation.Valid;
+
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,6 +55,11 @@ public class MemberNoteController {
     public ApiResponse<PageResult<NoteCard>> collects(@RequestParam(defaultValue = "1") int page,
                                                       @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.ok(noteService.collects(SecurityUtils.currentUser().userId(), page, size));
+    }
+
+    @GetMapping("/api/member/inbox")
+    public ApiResponse<List<InboxItem>> inbox(@RequestParam(defaultValue = "like") String kind) {
+        return ApiResponse.ok(noteService.inbox(SecurityUtils.currentUser().userId(), kind));
     }
 
     @PutMapping("/api/member/notes/{id}/like")

@@ -17,6 +17,7 @@ public record NoteSaveRequest(
         @Size(max = 128) String placeName,
         @Size(max = 64) String cityName,
         BigDecimal longitude,
-        BigDecimal latitude
+        BigDecimal latitude,
+        Boolean draft
 ) {
 }

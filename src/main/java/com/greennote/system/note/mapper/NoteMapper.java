@@ -1,5 +1,6 @@
 package com.greennote.system.note.mapper;
 
+import com.greennote.system.note.InboxRow;
 import com.greennote.system.note.NoteInsert;
 import com.greennote.system.note.NoteRecord;
 import com.greennote.system.note.controller.vo.TopicBrief;
@@ -65,4 +66,10 @@ public interface NoteMapper {
     int deleteTopics(String noteId);
 
     int insertTopic(@Param("id") String id, @Param("noteId") String noteId, @Param("topicId") String topicId);
+
+    List<InboxRow> listReceivedLikes(String userId);
+
+    List<InboxRow> listReceivedCollects(String userId);
+
+    List<InboxRow> listReceivedComments(String userId);
 }
